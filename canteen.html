@@ -1,0 +1,921 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173b32">
+  <meta name="description" content="A simple digital canteen wallet demo. Top up your balance, order lunch, and track your spending.">
+  <title>Common Table | Campus Canteen</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --forest: #173b32;
+      --forest-light: #244d40;
+      --ink: #1a2924;
+      --muted: #7a8580;
+      --paper: #f4f4ed;
+      --white: #fffefa;
+      --lime: #d7ee78;
+      --coral: #e9785d;
+      --line: #e7e8df;
+      --font-head: "Space Grotesk", sans-serif;
+      --font-body: "DM Sans", sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { min-width: 320px; margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); }
+    button, input { font: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--coral); outline-offset: 3px; }
+    button { cursor: pointer; }
+    [hidden] { display: none !important; }
+    .skip-link { position: absolute; z-index: 20; top: -4rem; left: 1rem; padding: .7rem 1rem; background: white; color: var(--forest); }
+    .skip-link:focus { top: 1rem; }
+
+    .auth-screen { min-height: 100vh; min-height: 100svh; display: grid; place-items: center; padding: 1.5rem; background: radial-gradient(ellipse at 80% 10%, #e2edc9 0, transparent 35%), linear-gradient(135deg, #f4f4ed, #e9eee5); }
+    .auth-panel { width: min(100%, 420px); padding: clamp(1.5rem, 5vw, 2.6rem); border: 1px solid #e3e6db; border-radius: 7px; background: var(--white); box-shadow: 0 18px 55px rgb(23 59 50 / 8%); }
+    .auth-brand { display: flex; align-items: center; gap: .7rem; margin-bottom: 2.4rem; }
+    .auth-brand .brand-mark { width: 42px; height: 42px; }
+    .auth-kicker { margin: 0 0 .55rem; color: #597b61; font-size: .66rem; font-weight: 700; text-transform: uppercase; }
+    .auth-panel h1 { margin: 0; font: 600 clamp(2rem, 7vw, 2.7rem)/1.05 var(--font-head); }
+    .auth-copy { margin: .7rem 0 1.5rem; color: var(--muted); font-size: .78rem; line-height: 1.65; }
+    .auth-fields { display: grid; gap: 1rem; }
+    .auth-field { display: grid; gap: .42rem; }
+    .auth-field label { color: #52614d; font-size: .69rem; font-weight: 700; }
+    .auth-input { width: 100%; min-height: 45px; padding: 0 .75rem; border: 1px solid #dfe3d8; border-radius: 4px; background: white; color: var(--ink); font-size: .85rem; }
+    .auth-input[readonly] { background: #f5f6f1; color: #52614d; }
+    .password-hint { margin: -.35rem 0 0; color: #66716b; font-size: .67rem; line-height: 1.6; }
+    .auth-error { padding: .65rem .75rem; border-left: 3px solid var(--coral); background: #fff4ed; color: #754c3c; font-size: .72rem; line-height: 1.5; }
+    .auth-submit { width: 100%; min-height: 45px; margin-top: .2rem; border: 0; border-radius: 4px; background: var(--forest); color: white; font-size: .76rem; font-weight: 700; }
+    .auth-submit:hover { background: var(--forest-light); }
+    .auth-note { margin: 1.3rem 0 0; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .65rem; line-height: 1.65; }
+
+    .app-shell { min-height: 100vh; }
+    .sidebar { position: fixed; z-index: 5; inset: 0 auto 0 0; width: 238px; display: flex; flex-direction: column; padding: 1.6rem 1.15rem; background: var(--forest); color: white; }
+    .brand { display: flex; align-items: center; gap: .75rem; margin: .15rem .35rem 3.2rem; color: white; text-decoration: none; }
+    .brand-mark { width: 39px; height: 39px; display: grid; place-items: center; border-radius: 12px; background: var(--lime); color: var(--forest); font: 700 1.1rem var(--font-head); }
+    .brand-name { font: 700 1.1rem var(--font-head); line-height: 1.05; }
+    .brand-name span { display: block; margin-top: .3rem; color: #b6c8be; font: 500 .59rem var(--font-body); text-transform: uppercase; }
+    .nav-caption { margin: 0 0 .7rem .65rem; color: #9bb3a7; font-size: .62rem; font-weight: 700; text-transform: uppercase; }
+    .nav-list { display: grid; gap: .3rem; }
+    .nav-link { min-height: 45px; display: flex; align-items: center; gap: .75rem; padding: 0 .75rem; border: 0; border-radius: 5px; background: transparent; color: #d1dfd6; text-align: left; font-size: .81rem; font-weight: 600; }
+    .nav-link:hover, .nav-link.is-active { background: #2c5144; color: white; }
+    .nav-icon { width: 22px; color: var(--lime); font: 600 1rem var(--font-head); text-align: center; }
+    .sidebar-bottom { margin-top: auto; padding: 1rem .7rem .2rem; border-top: 1px solid #35574b; }
+    .open-label { display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem; color: var(--lime); font-size: .7rem; font-weight: 700; text-transform: uppercase; }
+    .open-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 4px rgb(215 238 120 / 13%); }
+    .sidebar-bottom p { margin: 0; color: #c0d0c7; font-size: .72rem; line-height: 1.6; }
+
+    .main-area { min-height: 100vh; margin-left: 238px; }
+    .topbar { min-height: 78px; padding: 0 clamp(1.2rem, 3vw, 3rem); display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--line); background: rgb(255 254 250 / 92%); }
+    .topbar-label { color: var(--muted); font-size: .75rem; font-weight: 600; }
+    .topbar-actions { display: flex; align-items: center; gap: .8rem; }
+    .demo-pill { padding: .45rem .65rem; border: 1px solid #d4dfaf; border-radius: 99px; background: #f2f6df; color: #4a622d; font-size: .66rem; font-weight: 700; text-transform: uppercase; }
+    .google-button { min-height: 39px; display: inline-flex; align-items: center; justify-content: center; gap: .55rem; padding: 0 .85rem; border: 1px solid #dcded6; border-radius: 5px; background: var(--white); color: var(--ink); font-size: .72rem; font-weight: 700; transition: border-color .15s, transform .15s; }
+    .google-button:hover { transform: translateY(-1px); border-color: #aab2a5; }
+    .google-g { color: #4285f4; font: 700 1rem var(--font-head); }
+    .avatar { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: #f5c8a5; color: #603f2c; font-size: .7rem; font-weight: 700; }
+    .session-email { color: #53625a; font-size: .72rem; font-weight: 600; }
+    .logout-button { min-height: 36px; padding: 0 .65rem; border: 1px solid #dcded6; border-radius: 4px; background: transparent; color: #53625a; font-size: .68rem; font-weight: 700; }
+    .logout-button:hover { background: #eef2e5; }
+
+    .content { max-width: 1600px; margin: 0 auto; padding: 2.25rem clamp(1.2rem, 3vw, 3rem) 3rem; }
+    .page-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1.6rem; }
+    .eyebrow { margin: 0 0 .45rem; color: #597b61; font-size: .66rem; font-weight: 700; text-transform: uppercase; }
+    h1, h2, h3, p { overflow-wrap: anywhere; }
+    h1 { margin: 0; font: 600 clamp(2rem, 3.1vw, 3rem)/1 var(--font-head); letter-spacing: 0; }
+    .date-label { color: var(--muted); font-size: .74rem; }
+
+    .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 310px; align-items: start; gap: 1.25rem; }
+    .primary-column { min-width: 0; }
+    .wallet-card { position: relative; min-height: 202px; overflow: hidden; padding: 1.55rem 1.7rem; border-radius: 7px; background: var(--forest); color: white; isolation: isolate; }
+    .wallet-card::before, .wallet-card::after { position: absolute; z-index: -1; border: 1px solid rgb(255 255 255 / 12%); border-radius: 50%; content: ""; }
+    .wallet-card::before { width: 310px; height: 310px; top: -175px; right: -48px; }
+    .wallet-card::after { width: 220px; height: 220px; top: -127px; right: -4px; }
+    .wallet-top { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+    .wallet-label { color: #c3d3cb; font-size: .72rem; font-weight: 600; }
+    .wallet-balance { margin: .5rem 0 1.35rem; font: 600 clamp(2.4rem, 4vw, 3.3rem)/1 var(--font-head); letter-spacing: 0; }
+    .wallet-foot { display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
+    .wallet-foot small { color: #c3d3cb; font-size: .68rem; }
+    .topup-button { min-height: 39px; display: inline-flex; align-items: center; gap: .45rem; padding: 0 .85rem; border: 0; border-radius: 4px; background: var(--lime); color: var(--forest); font-size: .73rem; font-weight: 700; }
+    .topup-button:hover { background: #e4f69e; }
+    .topup-button span { font-size: 1.1rem; }
+
+    .menu-toolbar { margin: 2rem 0 1rem; display: flex; align-items: end; justify-content: space-between; gap: 1rem; }
+    .menu-toolbar h2 { margin: 0; font: 600 1.45rem var(--font-head); }
+    .menu-toolbar p { margin: .3rem 0 0; color: var(--muted); font-size: .73rem; }
+    .category-tabs { display: flex; flex-wrap: wrap; gap: .3rem; }
+    .category-tab { min-height: 31px; padding: 0 .7rem; border: 1px solid transparent; border-radius: 3px; background: transparent; color: #66716b; font-size: .68rem; font-weight: 700; }
+    .category-tab:hover { color: var(--forest); }
+    .category-tab.is-active { border-color: #c5d4bb; background: #e8efe2; color: var(--forest); }
+    .menu-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+    .menu-item { min-width: 0; overflow: hidden; border: 1px solid #e6e7df; border-radius: 6px; background: var(--white); transition: transform .16s, box-shadow .16s; }
+    .menu-item:hover { transform: translateY(-2px); box-shadow: 0 9px 22px rgb(31 53 42 / 8%); }
+    .menu-photo { width: 100%; aspect-ratio: 1.55; display: block; object-fit: cover; background: #e5e9dc; }
+    .menu-details { padding: .8rem .85rem .85rem; }
+    .menu-kind { color: #75856c; font-size: .59rem; font-weight: 700; text-transform: uppercase; }
+    .menu-item h3 { margin: .35rem 0 .3rem; font: 600 1rem/1.2 var(--font-head); }
+    .menu-item p { min-height: 2.5em; margin: 0; color: var(--muted); font-size: .67rem; line-height: 1.5; }
+    .menu-buy-row { margin-top: .85rem; display: flex; align-items: center; justify-content: space-between; gap: .4rem; }
+    .menu-price { font: 600 .96rem var(--font-head); }
+    .add-button { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 4px; background: var(--lime); color: var(--forest); font-size: 1.2rem; font-weight: 600; }
+    .add-button:hover { background: #c5e45c; }
+
+    .right-rail { display: grid; gap: 1rem; }
+    .rail-section { overflow: hidden; border: 1px solid #e6e7df; border-radius: 6px; background: var(--white); }
+    .rail-heading { padding: 1rem 1rem .8rem; display: flex; align-items: center; justify-content: space-between; gap: .6rem; border-bottom: 1px solid var(--line); }
+    .rail-heading h2 { margin: 0; font: 600 1.05rem var(--font-head); }
+    .item-count { min-width: 23px; height: 23px; display: grid; place-items: center; border-radius: 50%; background: #eef2e5; color: #526541; font-size: .65rem; font-weight: 700; }
+    .cart-body { padding: .7rem 1rem 1rem; }
+    .cart-empty { padding: 1rem 0; color: var(--muted); font-size: .75rem; line-height: 1.6; }
+    .cart-line { padding: .65rem 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .4rem; border-bottom: 1px solid var(--line); }
+    .cart-name { font-size: .73rem; font-weight: 700; }
+    .cart-line-price { font-size: .7rem; font-weight: 700; }
+    .cart-controls { margin-top: .35rem; display: flex; align-items: center; gap: .5rem; }
+    .qty-button { width: 22px; height: 22px; border: 1px solid #dfe2d9; border-radius: 3px; background: white; color: var(--ink); font-size: .8rem; }
+    .qty-value { min-width: 14px; color: var(--muted); font-size: .68rem; text-align: center; }
+    .cart-total { margin: .9rem 0; display: flex; align-items: center; justify-content: space-between; font-size: .74rem; font-weight: 700; }
+    .checkout-button { width: 100%; min-height: 42px; border: 0; border-radius: 4px; background: var(--forest); color: white; font-size: .74rem; font-weight: 700; }
+    .checkout-button:hover { background: var(--forest-light); }
+    .checkout-button:disabled { cursor: not-allowed; background: #b6c0b9; }
+    .wallet-tip { padding: 1rem; border-radius: 6px; background: #e8efd9; }
+    .wallet-tip h3 { margin: 0 0 .4rem; font: 600 .92rem var(--font-head); }
+    .wallet-tip p { margin: 0; color: #52614d; font-size: .69rem; line-height: 1.6; }
+    .limit-body { padding: 1.2rem; }
+    .limit-description { max-width: 700px; margin: 0 0 1.4rem; color: #66716b; font-size: .78rem; line-height: 1.7; }
+    .limit-current { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .5rem; font-size: .73rem; }
+    .limit-current span { color: #66716b; }
+    .limit-current strong { font: 600 1.15rem var(--font-head); }
+    .limit-track { height: 8px; margin-top: .7rem; overflow: hidden; border-radius: 99px; background: #e9ece3; }
+    .limit-track span { width: 0; height: 100%; display: block; border-radius: inherit; background: var(--forest); transition: width .2s; }
+    .limit-remaining { margin: .55rem 0 1rem; color: #52614d; font-size: .69rem; }
+    .limit-schedule { margin: 1rem 0; padding: .75rem; border-left: 3px solid var(--lime); background: #f2f6e6; color: #52614d; font-size: .7rem; line-height: 1.6; }
+    .limit-schedule:empty { display: none; }
+    .limit-form { padding-top: 1.1rem; border-top: 1px solid var(--line); }
+    .limit-entry { display: grid; grid-template-columns: auto minmax(100px, 1fr) auto; align-items: center; gap: .55rem; }
+    .limit-entry > span { font-size: .8rem; font-weight: 700; }
+    .limit-note { margin: .8rem 0 0; color: #7a8580; font-size: .65rem; line-height: 1.6; }
+
+    .activity-view { margin-top: 1.2rem; border: 1px solid #e6e7df; border-radius: 6px; background: var(--white); }
+    .activity-toolbar { padding: .9rem 1rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .7rem; border-bottom: 1px solid var(--line); }
+    .activity-toolbar h2 { margin: 0; font: 600 1.1rem var(--font-head); }
+    .activity-filters { display: flex; gap: .25rem; }
+    .activity-filter { padding: .4rem .6rem; border: 0; border-radius: 3px; background: transparent; color: var(--muted); font-size: .67rem; font-weight: 700; }
+    .activity-filter.is-active { background: #e8efe2; color: var(--forest); }
+    .transaction { min-height: 63px; padding: .7rem 1rem; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: .7rem; border-bottom: 1px solid var(--line); }
+    .transaction:last-child { border-bottom: 0; }
+    .transaction-mark { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: #eef2e5; color: #526541; font-size: .9rem; }
+    .transaction.is-purchase .transaction-mark { background: #f9e7df; color: #ac543b; }
+    .transaction-title { font-size: .72rem; font-weight: 700; }
+    .transaction-time { margin-top: .2rem; color: var(--muted); font-size: .62rem; }
+    .transaction-amount { font-size: .73rem; font-weight: 700; white-space: nowrap; }
+    .transaction-amount.is-credit { color: #4c773e; }
+    .activity-empty { padding: 2rem 1rem; color: var(--muted); font-size: .75rem; text-align: center; }
+    .notice { margin-top: 1.2rem; padding: .7rem .85rem; border-left: 3px solid var(--coral); background: #fff4ed; color: #715246; font-size: .67rem; line-height: 1.55; }
+
+    .toast { position: fixed; z-index: 30; right: 1.25rem; bottom: 1.25rem; max-width: min(390px, calc(100vw - 2rem)); padding: .85rem 1rem; border-radius: 5px; background: var(--forest); color: white; box-shadow: 0 8px 30px rgb(0 0 0 / 18%); font-size: .76rem; line-height: 1.5; animation: toast-in .2s ease-out both; }
+    dialog { width: min(430px, calc(100% - 2rem)); padding: 0; border: 1px solid #dfe3d8; border-radius: 8px; background: var(--white); color: var(--ink); box-shadow: 0 20px 70px rgb(20 40 30 / 25%); }
+    dialog::backdrop { background: rgb(16 35 28 / 55%); backdrop-filter: blur(3px); }
+    .dialog-inner { padding: 1.4rem; }
+    .dialog-top { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+    .dialog-inner h2 { margin: 0; font: 600 1.4rem var(--font-head); }
+    .dialog-inner > p { margin: .65rem 0 1.2rem; color: var(--muted); font-size: .77rem; line-height: 1.65; }
+    .dialog-close { width: 31px; height: 31px; border: 1px solid var(--line); border-radius: 4px; background: white; color: var(--muted); font-size: 1rem; }
+    .amount-options { margin-bottom: 1rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+    .amount-option { min-height: 40px; border: 1px solid #dfe3d8; border-radius: 4px; background: white; color: var(--forest); font-size: .77rem; font-weight: 700; }
+    .amount-option:hover, .amount-option.is-selected { border-color: var(--forest); background: #eef2e5; }
+    .amount-label { display: block; margin-bottom: .35rem; color: #5f6e65; font-size: .68rem; font-weight: 700; }
+    .amount-input { width: 100%; min-height: 43px; padding: 0 .75rem; border: 1px solid #dfe3d8; border-radius: 4px; background: white; color: var(--ink); font-size: .9rem; }
+    .dialog-actions { margin-top: 1rem; display: flex; justify-content: end; gap: .5rem; }
+    .secondary-button, .primary-button { min-height: 40px; padding: 0 .9rem; border-radius: 4px; font-size: .72rem; font-weight: 700; }
+    .secondary-button { border: 1px solid #dfe3d8; background: white; color: var(--ink); }
+    .primary-button { border: 0; background: var(--forest); color: white; }
+    .google-setup { padding: .85rem; border-radius: 4px; background: #eef2e5; color: #52614d; font-size: .72rem; line-height: 1.65; }
+
+    @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+    @media (max-width: 1150px) {
+      .workspace { grid-template-columns: minmax(0, 1fr) 280px; }
+      .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .manager-line { grid-template-columns: 1fr 1.4fr; }
+      .manager-line p { grid-column: 1 / -1; }
+    }
+    @media (max-width: 850px) {
+      .sidebar { position: sticky; inset: 0 0 auto; width: 100%; height: auto; padding: .7rem 1rem .55rem; }
+      .brand { margin: 0 0 .65rem; }
+      .brand-mark { width: 34px; height: 34px; border-radius: 10px; }
+      .brand-name { font-size: 1rem; }
+      .nav-caption, .sidebar-bottom { display: none; }
+      .nav-list { display: flex; gap: .25rem; overflow-x: auto; scrollbar-width: none; }
+      .nav-list::-webkit-scrollbar { display: none; }
+      .nav-link { min-height: 37px; flex: 0 0 auto; padding: 0 .7rem; font-size: .7rem; }
+      .nav-icon { width: auto; }
+      .main-area { margin-left: 0; }
+      .topbar { min-height: 64px; }
+    }
+    @media (max-width: 680px) {
+      .topbar { padding: 0 1rem; }
+      .topbar-label { display: none; }
+      .topbar-actions { width: 100%; justify-content: flex-end; gap: .5rem; }
+      .demo-pill { font-size: .58rem; }
+      .google-button { min-height: 35px; padding: 0 .6rem; font-size: .65rem; }
+      .avatar { width: 32px; height: 32px; }
+      .session-email { display: none; }
+      .content { padding: 1.5rem 1rem 2rem; }
+      .page-heading { align-items: start; flex-direction: column; gap: .5rem; }
+      .workspace { grid-template-columns: minmax(0, 1fr); }
+      .wallet-card { min-height: 186px; padding: 1.3rem; }
+      .menu-toolbar { align-items: start; flex-direction: column; }
+      .category-tabs { width: 100%; overflow-x: auto; flex-wrap: nowrap; }
+      .category-tab { flex: 0 0 auto; }
+      .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
+      .menu-details { padding: .7rem; }
+      .menu-item h3 { font-size: .9rem; }
+      .menu-item p { font-size: .63rem; }
+      .right-rail { grid-row: 1; }
+      .wallet-tip { display: none; }
+      .manager-line { grid-template-columns: 1fr; gap: .6rem; }
+      .manager-line p { grid-column: auto; }
+      .activity-toolbar { align-items: start; flex-direction: column; }
+      .notice { font-size: .63rem; }
+    }
+    @media (max-width: 390px) {
+      .menu-grid { grid-template-columns: 1fr; }
+      .menu-photo { aspect-ratio: 2 / 1; }
+      .google-button { gap: .3rem; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to canteen menu</a>
+  <main class="auth-screen" id="auth-screen">
+    <section class="auth-panel" aria-labelledby="auth-title">
+      <div class="auth-brand"><span class="brand-mark" aria-hidden="true">ct</span><span class="brand-name">common table<span>campus canteen</span></span></div>
+      <p class="auth-kicker">Demo wallet · Singapore dollars</p>
+      <h1 id="auth-title">Sign in to your canteen.</h1>
+      <p class="auth-copy" id="auth-copy">Use your demo account to view your balance and place an order.</p>
+      <form class="auth-fields" id="login-form">
+        <div class="auth-field"><label for="login-email">Email</label><input class="auth-input" id="login-email" type="email" value="demo@gmail.com" autocomplete="username" readonly required></div>
+        <div class="auth-field"><label for="login-password" id="login-password-label">Password</label><input class="auth-input" id="login-password" type="password" autocomplete="current-password" required></div>
+        <div class="auth-field" id="confirm-password-field" hidden><label for="confirm-password">Confirm password</label><input class="auth-input" id="confirm-password" type="password" autocomplete="new-password"></div>
+        <div class="auth-field" id="create-pin-field" hidden><label for="create-pin">Create 6-digit transaction PIN</label><input class="auth-input" id="create-pin" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="new-password"></div>
+        <div class="auth-field" id="confirm-pin-field" hidden><label for="confirm-pin">Confirm transaction PIN</label><input class="auth-input" id="confirm-pin" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="new-password"></div>
+        <p class="password-hint" id="pin-hint" hidden>Your PIN must contain exactly six digits.</p>
+        <p class="password-hint" id="password-hint" hidden>Use at least 8 characters, including a letter, a number, and a special character such as ! or #.</p>
+        <p class="auth-error" id="auth-error" role="alert" hidden></p>
+        <button class="auth-submit" id="auth-submit" type="submit">Sign in</button>
+      </form>
+      <p class="auth-note">This demo stores a password hash and practice wallet in this browser only. It does not connect to a real account, bank, or payment service.</p>
+    </section>
+  </main>
+  <div class="app-shell" id="app-shell" hidden>
+    <aside class="sidebar" aria-label="Canteen navigation">
+      <a class="brand" href="#dashboard" aria-label="Common Table home">
+        <span class="brand-mark" aria-hidden="true">ct</span>
+        <span class="brand-name">common table<span>campus canteen</span></span>
+      </a>
+      <p class="nav-caption">Your canteen</p>
+      <nav class="nav-list" aria-label="Main navigation">
+        <button class="nav-link is-active" type="button" data-view="dashboard"><span class="nav-icon" aria-hidden="true">⌂</span>Today</button>
+        <button class="nav-link" type="button" data-view="menu"><span class="nav-icon" aria-hidden="true">＋</span>Menu</button>
+        <button class="nav-link" type="button" data-view="activity"><span class="nav-icon" aria-hidden="true">↕</span>Activity</button>
+        <button class="nav-link" type="button" data-view="limits"><span class="nav-icon" aria-hidden="true">◷</span>Limits</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="open-label"><span class="open-dot" aria-hidden="true"></span>Serving lunch</div>
+        <p>Kitchen open until 2:30 pm<br>North Hall · Ground floor</p>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar">
+        <div class="topbar-label">North Hall Canteen <span aria-hidden="true">/</span> Lunch service</div>
+        <div class="topbar-actions">
+          <span class="demo-pill">Demo · SGD</span>
+          <span class="session-email">demo@gmail.com</span>
+          <button class="logout-button" id="logout-button" type="button">Log out</button>
+        </div>
+      </header>
+
+      <main id="main" class="content">
+        <section id="dashboard-view" data-panel="dashboard">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">Wednesday · Lunch is on</p>
+              <h1>Good afternoon.</h1>
+            </div>
+            <span class="date-label" id="today-date"></span>
+          </div>
+
+          <div class="workspace">
+            <div class="primary-column">
+              <section class="wallet-card" aria-label="Demo wallet balance">
+                <div class="wallet-top"><span class="wallet-label">Your lunch balance</span><span class="demo-pill">Practice mode</span></div>
+                <div class="wallet-balance" id="wallet-balance">S$18.50</div>
+                <div class="wallet-foot"><small>Stored on this device · demo funds only</small><button class="topup-button" type="button" data-open-topup><span aria-hidden="true">＋</span>Top up</button></div>
+              </section>
+
+              <div class="menu-toolbar" id="menu">
+                <div><h2>On the menu</h2><p>Fresh from the kitchen, ready when you are.</p></div>
+                <div class="category-tabs" role="group" aria-label="Filter menu by category">
+                  <button class="category-tab is-active" type="button" data-category="all">All</button>
+                  <button class="category-tab" type="button" data-category="mains">Mains</button>
+                  <button class="category-tab" type="button" data-category="snacks">Snacks</button>
+                  <button class="category-tab" type="button" data-category="drinks">Drinks</button>
+                </div>
+              </div>
+              <div class="menu-grid" id="menu-grid" aria-live="polite"></div>
+            </div>
+
+            <aside class="right-rail" aria-label="Order and wallet">
+              <section class="rail-section" aria-labelledby="cart-title">
+                <div class="rail-heading"><h2 id="cart-title">Your tray</h2><span class="item-count" id="cart-count">0</span></div>
+                <div class="cart-body" id="cart-body"></div>
+              </section>
+              <section class="wallet-tip">
+                <h3>Quick lunch, less queue.</h3>
+                <p>Add a few favourites to your tray, then check out with your demo balance. Orders are simulated here.</p>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+        <section id="activity-view" data-panel="activity" hidden>
+          <div class="page-heading">
+            <div><p class="eyebrow">Your wallet</p><h1>Spending activity.</h1></div>
+            <button class="topup-button" type="button" data-open-topup><span aria-hidden="true">＋</span>Top up</button>
+          </div>
+          <div class="wallet-card" aria-label="Demo wallet balance">
+            <div class="wallet-label">Available balance</div>
+            <div class="wallet-balance" id="activity-balance">S$18.50</div>
+            <div class="wallet-foot"><small>Simulated balance · stored in this browser</small></div>
+          </div>
+          <section class="activity-view" aria-labelledby="activity-title">
+            <div class="activity-toolbar">
+              <h2 id="activity-title">Recent transactions</h2>
+              <div class="activity-filters" role="group" aria-label="Filter transactions">
+                <button class="activity-filter is-active" type="button" data-activity-filter="all">All</button>
+                <button class="activity-filter" type="button" data-activity-filter="topup">Top-ups</button>
+                <button class="activity-filter" type="button" data-activity-filter="purchase">Orders</button>
+              </div>
+            </div>
+            <div id="transaction-list"></div>
+          </section>
+          <p class="notice">Demo only: transaction history is local to this browser and is not connected to a bank, payment processor, or real canteen account.</p>
+        </section>
+        <section id="limits-view" data-panel="limits" hidden>
+          <div class="page-heading">
+            <div><p class="eyebrow">Wallet controls</p><h1>Hourly limit.</h1></div>
+          </div>
+          <section class="rail-section limit-panel" aria-labelledby="limit-title">
+            <div class="rail-heading"><h2 id="limit-title">Combined top-up + spending cap</h2><span class="demo-pill">Rolling 60 min</span></div>
+            <div class="limit-body">
+              <p class="limit-description">Top-ups and canteen purchases share one hourly allowance. A new limit takes one full hour to become active.</p>
+              <div class="limit-current"><span>Used this hour</span><strong id="hourly-usage">S$0.00 of S$15.00</strong></div>
+              <div class="limit-track" role="progressbar" aria-label="Hourly limit used" aria-valuemin="0" aria-valuemax="1500" aria-valuenow="0"><span id="hourly-progress"></span></div>
+              <p class="limit-remaining" id="hourly-remaining">S$15.00 remaining this hour.</p>
+              <div class="limit-schedule" id="limit-schedule" role="status"></div>
+              <form id="limit-form" class="limit-form">
+                <label class="amount-label" for="limit-amount">New combined limit (S$1–S$100 per hour)</label>
+                <div class="limit-entry"><span aria-hidden="true">S$</span><input class="amount-input" id="limit-amount" type="number" min="1" max="100" step="0.01" inputmode="decimal" placeholder="15.00" required><button class="primary-button" type="submit">Schedule change</button></div>
+              </form>
+              <p class="limit-note">Default limit: S$15.00 per rolling hour. Changes are delayed by one hour and remain pending until then.</p>
+            </div>
+          </section>
+          <p class="notice">This is a browser-only demo control. A production wallet must enforce limits on a trusted server so they cannot be changed or bypassed using developer tools.</p>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="topup-dialog" aria-labelledby="topup-title">
+    <form class="dialog-inner" id="topup-form">
+      <div class="dialog-top"><h2 id="topup-title">Add lunch credit</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button></div>
+      <p>Choose an amount to add to your demo wallet. This does not charge a card.</p>
+      <div class="amount-options" role="group" aria-label="Suggested top-up amounts">
+        <button class="amount-option" type="button" data-amount="5">S$5</button>
+        <button class="amount-option" type="button" data-amount="10">S$10</button>
+        <button class="amount-option" type="button" data-amount="15">S$15</button>
+      </div>
+      <label class="amount-label" for="topup-amount">Or enter an amount (S$1–S$100)</label>
+      <input class="amount-input" id="topup-amount" type="number" min="1" max="100" step="0.01" inputmode="decimal" placeholder="10.00" required>
+      <div class="dialog-actions"><button class="secondary-button" type="button" data-close-dialog>Cancel</button><button class="primary-button" type="submit">Add funds</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="password-dialog" aria-labelledby="password-dialog-title">
+    <div class="dialog-inner">
+      <div class="dialog-top"><h2 id="password-dialog-title">Confirm with your password</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button></div>
+      <p id="password-dialog-copy">Enter your password to confirm this wallet action.</p>
+      <form id="action-password-form">
+        <label class="amount-label" for="action-password">Account password</label>
+        <input class="amount-input" id="action-password" type="password" autocomplete="current-password" required>
+        <label class="amount-label" for="action-pin" style="margin-top: .8rem">6-digit transaction PIN</label>
+        <input class="amount-input" id="action-pin" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off" required>
+        <p class="auth-error" id="action-password-error" role="alert" hidden></p>
+        <div class="dialog-actions"><button class="secondary-button" type="button" data-close-dialog>Cancel</button><button class="primary-button" type="submit">Confirm</button></div>
+      </form>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script>
+    const storageKey = "common-table-wallet-demo-sgd-v2";
+    const credentialStorageKey = "common-table-demo-credential-v1";
+    const demoEmail = "demo@gmail.com";
+    const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d\s]).{8,}$/;
+    const menuItems = [
+      { id: "grain-bowl", name: "Green goddess bowl", category: "mains", label: "Plant powered", description: "Herby grains, greens, avocado, lemon dressing.", price: 695, image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80", alt: "Fresh green grain bowl with vegetables" },
+      { id: "chicken-wrap", name: "Roast chicken wrap", category: "mains", label: "Kitchen favourite", description: "Roast chicken, crunchy slaw, pepper mayo.", price: 650, image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80", alt: "Freshly prepared canteen lunch" },
+      { id: "tomato-soup", name: "Tomato & basil soup", category: "mains", label: "Today’s soup", description: "Slow-roasted tomato with warm sourdough.", price: 475, image: "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=800&q=80", alt: "Bowl of tomato soup with herbs" },
+      { id: "fruit-cup", name: "Market fruit cup", category: "snacks", label: "Fresh today", description: "A bright mix of whatever’s in season.", price: 250, image: "https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?auto=format&fit=crop&w=800&q=80", alt: "Fresh fruit ready to eat" },
+      { id: "oat-cookie", name: "Oat & choc cookie", category: "snacks", label: "Baked here", description: "Soft-centred, made in the canteen kitchen.", price: 180, image: "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=800&q=80", alt: "Freshly baked chocolate cookies" },
+      { id: "iced-coffee", name: "Iced oat latte", category: "drinks", label: "Barista made", description: "Double espresso, oat milk, plenty of ice.", price: 325, image: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=800&q=80", alt: "Iced coffee with milk" }
+    ];
+
+    function initialState() {
+      const now = Date.now();
+      return {
+        balance: 1850,
+        cart: {},
+        hourlyLimit: { activeCents: 1500, pending: null },
+        transactions: [{ id: `start-${now}`, type: "seed", title: "Demo wallet started", amount: 1850, at: now }]
+      };
+    }
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey));
+        if (saved && Number.isInteger(saved.balance) && saved.balance >= 0 && saved.cart && Array.isArray(saved.transactions)) {
+          if (!saved.hourlyLimit || !Number.isInteger(saved.hourlyLimit.activeCents)) saved.hourlyLimit = { activeCents: 1500, pending: null };
+          return saved;
+        }
+      } catch (error) {
+        console.warn("Could not read the local demo wallet.", error);
+      }
+      return initialState();
+    }
+
+    function loadCredential() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(credentialStorageKey));
+        if (saved && saved.email === demoEmail && typeof saved.salt === "string" && typeof saved.hash === "string") return saved;
+      } catch (error) {
+        console.warn("Could not read the local demo account.", error);
+      }
+      return null;
+    }
+
+    let state = loadState();
+    let credential = loadCredential();
+    let activeCategory = "all";
+    let activeActivityFilter = "all";
+    let pendingAction = null;
+    let toastTimer;
+    const money = (cents) => `S$${(cents / 100).toFixed(2)}`;
+    const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[character]);
+
+    function bytesToHex(bytes) {
+      return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+    }
+
+    function hexToBytes(hex) {
+      return new Uint8Array(hex.match(/.{2}/g).map((byte) => Number.parseInt(byte, 16)));
+    }
+
+    async function hashPassword(password, saltHex) {
+      const salt = saltHex ? hexToBytes(saltHex) : crypto.getRandomValues(new Uint8Array(16));
+      const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+      const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations: 120000, hash: "SHA-256" }, key, 256);
+      return { salt: bytesToHex(salt), hash: bytesToHex(new Uint8Array(bits)) };
+    }
+
+    async function passwordMatches(password) {
+      if (!credential || !crypto.subtle) return false;
+      const result = await hashPassword(password, credential.salt);
+      return result.hash === credential.hash;
+    }
+
+    async function pinMatches(pin) {
+      if (!credential || !credential.pinSalt || !credential.pinHash || !/^\d{6}$/.test(pin) || !crypto.subtle) return false;
+      const result = await hashPassword(pin, credential.pinSalt);
+      return result.hash === credential.pinHash;
+    }
+
+    function configureLogin() {
+      const setupMode = !credential;
+      const pinSetupMode = !credential?.pinSalt || !credential?.pinHash;
+      document.querySelector("#auth-title").textContent = setupMode ? "Set up your canteen account." : pinSetupMode ? "Create your transaction PIN." : "Sign in to your canteen.";
+      document.querySelector("#auth-copy").textContent = setupMode
+        ? "Create a sign-in password and a 6-digit PIN for wallet transactions."
+        : pinSetupMode
+          ? "Create a 6-digit PIN to protect top-ups and purchases. Your balance stays hidden until you do."
+          : "Use your demo account to view your balance and place an order.";
+      document.querySelector("#confirm-password-field").hidden = !setupMode;
+      document.querySelector("#confirm-password").required = setupMode;
+      document.querySelector("#create-pin-field").hidden = !pinSetupMode;
+      document.querySelector("#confirm-pin-field").hidden = !pinSetupMode;
+      document.querySelector("#create-pin").required = pinSetupMode;
+      document.querySelector("#confirm-pin").required = pinSetupMode;
+      document.querySelector("#pin-hint").hidden = !pinSetupMode;
+      document.querySelector("#password-hint").hidden = !setupMode;
+      document.querySelector("#auth-submit").textContent = setupMode ? "Create account and sign in" : pinSetupMode ? "Save PIN and continue" : "Sign in";
+      document.querySelector("#login-password").autocomplete = setupMode ? "new-password" : "current-password";
+    }
+
+    function showApp() {
+      document.querySelector("#auth-screen").hidden = true;
+      document.querySelector("#app-shell").hidden = false;
+      document.querySelector("#auth-error").hidden = true;
+      render();
+    }
+
+    function showLogin() {
+      document.querySelector("#app-shell").hidden = true;
+      document.querySelector("#auth-screen").hidden = false;
+      document.querySelector("#login-password").value = "";
+      document.querySelector("#auth-error").hidden = true;
+      configureLogin();
+      document.querySelector("#login-password").focus();
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(state));
+      } catch (error) {
+        showToast("Browser storage is unavailable. Your demo changes may not persist.");
+      }
+    }
+
+    function showToast(message) {
+      const toast = document.querySelector("#toast");
+      toast.textContent = message;
+      toast.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toast.hidden = true; }, 3600);
+    }
+
+    function renderMenu() {
+      const visibleItems = activeCategory === "all" ? menuItems : menuItems.filter((item) => item.category === activeCategory);
+      document.querySelector("#menu-grid").innerHTML = visibleItems.map((item) => `
+        <article class="menu-item">
+          <img class="menu-photo" src="${item.image}" alt="${escapeHtml(item.alt)}" loading="lazy">
+          <div class="menu-details">
+            <div class="menu-kind">${escapeHtml(item.label)}</div>
+            <h3>${escapeHtml(item.name)}</h3>
+            <p>${escapeHtml(item.description)}</p>
+            <div class="menu-buy-row"><span class="menu-price">${money(item.price)}</span><button class="add-button" type="button" data-add-item="${item.id}" aria-label="Add ${escapeHtml(item.name)} to tray">+</button></div>
+          </div>
+        </article>`).join("");
+    }
+
+    function getCartLines() {
+      return Object.entries(state.cart).map(([id, quantity]) => ({ item: menuItems.find((item) => item.id === id), quantity })).filter((line) => line.item && line.quantity > 0);
+    }
+
+    function renderCart() {
+      const lines = getCartLines();
+      const count = lines.reduce((sum, line) => sum + line.quantity, 0);
+      const total = lines.reduce((sum, line) => sum + line.item.price * line.quantity, 0);
+      document.querySelector("#cart-count").textContent = count;
+      const body = document.querySelector("#cart-body");
+      if (!count) {
+        body.innerHTML = `<p class="cart-empty">Your tray is empty. Add something tasty from the menu.</p><button class="checkout-button" type="button" disabled>Checkout · ${money(0)}</button>`;
+        return;
+      }
+      const rows = lines.map(({ item, quantity }) => `
+        <div class="cart-line">
+          <div><div class="cart-name">${escapeHtml(item.name)}</div><div class="cart-controls"><button class="qty-button" type="button" data-cart-change="${item.id}" data-delta="-1" aria-label="Remove one ${escapeHtml(item.name)}">−</button><span class="qty-value">${quantity}</span><button class="qty-button" type="button" data-cart-change="${item.id}" data-delta="1" aria-label="Add one ${escapeHtml(item.name)}">+</button></div></div>
+          <span class="cart-line-price">${money(item.price * quantity)}</span>
+        </div>`).join("");
+      body.innerHTML = `${rows}<div class="cart-total"><span>Total</span><span>${money(total)}</span></div><button class="checkout-button" type="button" data-checkout>Pay ${money(total)}</button>`;
+    }
+
+    function renderTransactions() {
+      const transactions = [...state.transactions].filter((entry) => activeActivityFilter === "all" || entry.type === activeActivityFilter).sort((a, b) => b.at - a.at);
+      const list = document.querySelector("#transaction-list");
+      if (!transactions.length) {
+        list.innerHTML = '<div class="activity-empty">No transactions in this view yet.</div>';
+        return;
+      }
+      list.innerHTML = transactions.map((entry) => {
+        const credited = entry.type === "topup" || entry.type === "seed" || entry.title === "Demo wallet started";
+        const date = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(entry.at));
+        return `<article class="transaction ${credited ? "" : "is-purchase"}"><span class="transaction-mark" aria-hidden="true">${credited ? "↑" : "−"}</span><div><div class="transaction-title">${escapeHtml(entry.title)}</div><div class="transaction-time">${date}</div></div><span class="transaction-amount ${credited ? "is-credit" : ""}">${credited ? "+" : "−"}${money(entry.amount)}</span></article>`;
+      }).join("");
+    }
+
+    function renderBalance() {
+      document.querySelector("#wallet-balance").textContent = money(state.balance);
+      document.querySelector("#activity-balance").textContent = money(state.balance);
+    }
+
+    function applyPendingLimit() {
+      const pending = state.hourlyLimit.pending;
+      if (pending && pending.effectiveAt <= Date.now()) {
+        state.hourlyLimit.activeCents = pending.amountCents;
+        state.hourlyLimit.pending = null;
+        saveState();
+      }
+      return state.hourlyLimit.activeCents;
+    }
+
+    function getHourlyUsage(now = Date.now()) {
+      const cutoff = now - 60 * 60 * 1000;
+      return state.transactions
+        .filter((entry) => (entry.type === "topup" || entry.type === "purchase") && entry.title !== "Demo wallet started" && entry.at >= cutoff && entry.at <= now)
+        .reduce((total, entry) => total + entry.amount, 0);
+    }
+
+    function getHourlyHeadroom() {
+      const limitCents = applyPendingLimit();
+      const usedCents = getHourlyUsage();
+      return { limitCents, usedCents, remainingCents: Math.max(0, limitCents - usedCents) };
+    }
+
+    function checkHourlyLimit(amountCents) {
+      const { limitCents, usedCents, remainingCents } = getHourlyHeadroom();
+      return amountCents <= remainingCents
+        ? null
+        : `Hourly limit reached. ${money(remainingCents)} remains from your ${money(limitCents)} cap; ${money(usedCents)} has moved in the last hour.`;
+    }
+
+    function renderLimitPolicy() {
+      const { limitCents, usedCents, remainingCents } = getHourlyHeadroom();
+      const usage = Math.min(usedCents, limitCents);
+      const progress = document.querySelector(".limit-track");
+      document.querySelector("#hourly-usage").textContent = `${money(usedCents)} of ${money(limitCents)}`;
+      document.querySelector("#hourly-remaining").textContent = `${money(remainingCents)} remaining this hour.`;
+      document.querySelector("#hourly-progress").style.width = `${Math.min(100, usage / limitCents * 100)}%`;
+      progress.setAttribute("aria-valuemax", String(limitCents));
+      progress.setAttribute("aria-valuenow", String(usage));
+      const schedule = document.querySelector("#limit-schedule");
+      const pending = state.hourlyLimit.pending;
+      if (pending) {
+        const effectiveTime = new Intl.DateTimeFormat("en-SG", { dateStyle: "medium", timeStyle: "short" }).format(new Date(pending.effectiveAt));
+        schedule.textContent = `Pending: ${money(pending.amountCents)} per hour, effective ${effectiveTime}. The current ${money(limitCents)} limit remains active until then.`;
+        if (document.activeElement !== document.querySelector("#limit-amount")) document.querySelector("#limit-amount").value = (pending.amountCents / 100).toFixed(2);
+      } else {
+        schedule.textContent = "";
+        if (document.activeElement !== document.querySelector("#limit-amount")) document.querySelector("#limit-amount").value = (limitCents / 100).toFixed(2);
+      }
+    }
+
+    function render() {
+      renderBalance();
+      renderMenu();
+      renderCart();
+      renderTransactions();
+      renderLimitPolicy();
+    }
+
+    function addTransaction(type, title, amount) {
+      state.transactions.push({ id: `${Date.now()}-${Math.random().toString(16).slice(2)}`, type, title, amount, at: Date.now() });
+    }
+
+    function switchView(viewName) {
+      const panelName = viewName === "menu" ? "dashboard" : viewName;
+      document.querySelectorAll("[data-panel]").forEach((panel) => { panel.hidden = panel.dataset.panel !== panelName; });
+      document.querySelectorAll("[data-view]").forEach((button) => {
+        const active = button.dataset.view === viewName;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-current", active ? "page" : "false");
+      });
+      if (viewName === "menu") document.querySelector("#menu").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function openTopup() {
+      document.querySelector("#topup-amount").value = "";
+      document.querySelectorAll(".amount-option").forEach((button) => button.classList.remove("is-selected"));
+      document.querySelector("#topup-dialog").showModal();
+    }
+
+    function requestPassword(action) {
+      pendingAction = action;
+      document.querySelector("#action-password").value = "";
+      document.querySelector("#action-pin").value = "";
+      document.querySelector("#action-password-error").hidden = true;
+      const title = action.type === "topup" ? "Confirm top-up" : action.type === "limit" ? "Confirm limit change" : "Confirm your order";
+      const copy = action.type === "topup"
+        ? `Enter your account password and 6-digit PIN to add ${money(action.amount)} to your demo wallet.`
+        : action.type === "limit"
+          ? `Enter your account password and 6-digit PIN to schedule a ${money(action.amount)} hourly limit. It will take effect in one hour.`
+          : `Enter your account password and 6-digit PIN to spend ${money(action.amount)} from your demo wallet.`;
+      document.querySelector("#password-dialog-title").textContent = title;
+      document.querySelector("#password-dialog-copy").textContent = copy;
+      document.querySelector("#password-dialog").showModal();
+      document.querySelector("#action-password").focus();
+    }
+
+    document.querySelector("#login-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const error = document.querySelector("#auth-error");
+      const password = document.querySelector("#login-password").value;
+      error.hidden = true;
+      if (!crypto.subtle) {
+        error.textContent = "Password security needs a secure browser context. Open this page on localhost or HTTPS.";
+        error.hidden = false;
+        return;
+      }
+      try {
+        if (document.querySelector("#login-email").value.trim().toLowerCase() !== demoEmail) {
+          throw new Error("Use the demo email demo@gmail.com.");
+        }
+        let accountCredential = credential;
+        const creatingAccount = !credential;
+        if (credential) {
+          if (!await passwordMatches(password)) throw new Error("That password doesn’t match this demo account.");
+        } else {
+          if (!passwordPattern.test(password)) throw new Error("Use at least 8 characters, including a letter, a number, and a special character.");
+          if (password !== document.querySelector("#confirm-password").value) throw new Error("The passwords don’t match.");
+          const result = await hashPassword(password);
+          accountCredential = { email: demoEmail, salt: result.salt, hash: result.hash };
+        }
+        const creatingPin = !accountCredential.pinSalt || !accountCredential.pinHash;
+        if (creatingPin) {
+          const pin = document.querySelector("#create-pin").value;
+          if (!/^\d{6}$/.test(pin)) throw new Error("Create a PIN using exactly six digits.");
+          if (pin !== document.querySelector("#confirm-pin").value) throw new Error("The PINs don’t match.");
+          const pinResult = await hashPassword(pin);
+          accountCredential = { ...accountCredential, pinSalt: pinResult.salt, pinHash: pinResult.hash };
+        }
+        if (creatingAccount || creatingPin) {
+          localStorage.setItem(credentialStorageKey, JSON.stringify(accountCredential));
+          credential = accountCredential;
+        }
+        document.querySelector("#login-password").value = "";
+        document.querySelector("#confirm-password").value = "";
+        document.querySelector("#create-pin").value = "";
+        document.querySelector("#confirm-pin").value = "";
+        showApp();
+      } catch (exception) {
+        error.textContent = exception.message || "Could not sign in. Check browser storage and try again.";
+        error.hidden = false;
+      }
+    });
+
+    document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => switchView(button.dataset.view)));
+    document.querySelectorAll("[data-open-topup]").forEach((button) => button.addEventListener("click", openTopup));
+    document.querySelectorAll("[data-close-dialog]").forEach((button) => button.addEventListener("click", () => {
+      const dialog = button.closest("dialog");
+      if (dialog.id === "password-dialog") pendingAction = null;
+      dialog.close();
+    }));
+    document.querySelector("#password-dialog").addEventListener("close", () => {
+      pendingAction = null;
+      document.querySelector("#action-password").value = "";
+      document.querySelector("#action-pin").value = "";
+    });
+    document.querySelector("#logout-button").addEventListener("click", showLogin);
+
+    document.querySelectorAll("[data-category]").forEach((button) => button.addEventListener("click", () => {
+      activeCategory = button.dataset.category;
+      document.querySelectorAll("[data-category]").forEach((tab) => tab.classList.toggle("is-active", tab === button));
+      renderMenu();
+    }));
+
+    document.querySelectorAll("[data-activity-filter]").forEach((button) => button.addEventListener("click", () => {
+      activeActivityFilter = button.dataset.activityFilter;
+      document.querySelectorAll("[data-activity-filter]").forEach((filter) => filter.classList.toggle("is-active", filter === button));
+      renderTransactions();
+    }));
+
+    document.querySelector("#menu-grid").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-add-item]");
+      if (!button) return;
+      const id = button.dataset.addItem;
+      state.cart[id] = (state.cart[id] || 0) + 1;
+      saveState();
+      renderCart();
+      showToast(`${menuItems.find((item) => item.id === id).name} added to your tray.`);
+    });
+
+    document.querySelector("#cart-body").addEventListener("click", (event) => {
+      const quantityButton = event.target.closest("[data-cart-change]");
+      if (quantityButton) {
+        const id = quantityButton.dataset.cartChange;
+        state.cart[id] = (state.cart[id] || 0) + Number(quantityButton.dataset.delta);
+        if (state.cart[id] <= 0) delete state.cart[id];
+        saveState();
+        renderCart();
+        return;
+      }
+      if (event.target.closest("[data-checkout]")) {
+        const lines = getCartLines();
+        const total = lines.reduce((sum, line) => sum + line.item.price * line.quantity, 0);
+        if (!total) return;
+        const limitError = checkHourlyLimit(total);
+        if (limitError) {
+          showToast(limitError);
+          return;
+        }
+        if (total > state.balance) {
+          showToast("Not quite enough in your demo wallet. Top up to finish your order.");
+          openTopup();
+          return;
+        }
+        requestPassword({ type: "purchase", amount: total });
+      }
+    });
+
+    document.querySelectorAll("[data-amount]").forEach((button) => button.addEventListener("click", () => {
+      document.querySelector("#topup-amount").value = button.dataset.amount;
+      document.querySelectorAll("[data-amount]").forEach((option) => option.classList.toggle("is-selected", option === button));
+    }));
+
+    document.querySelector("#topup-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const amount = Number(document.querySelector("#topup-amount").value);
+      if (!Number.isFinite(amount) || amount < 1 || amount > 100) {
+        showToast("Choose a top-up between S$1 and S$100.");
+        return;
+      }
+      const cents = Math.round(amount * 100);
+      const limitError = checkHourlyLimit(cents);
+      if (limitError) {
+        showToast(limitError);
+        return;
+      }
+      document.querySelector("#topup-dialog").close();
+      requestPassword({ type: "topup", amount: cents });
+    });
+
+    document.querySelector("#limit-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const amount = Number(document.querySelector("#limit-amount").value);
+      if (!Number.isFinite(amount) || amount < 1 || amount > 100) {
+        showToast("Choose an hourly limit between S$1 and S$100.");
+        return;
+      }
+      requestPassword({ type: "limit", amount: Math.round(amount * 100) });
+    });
+
+    document.querySelector("#action-password-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const input = document.querySelector("#action-password");
+      const pinInput = document.querySelector("#action-pin");
+      const error = document.querySelector("#action-password-error");
+      const submit = event.currentTarget.querySelector("[type=submit]");
+      submit.disabled = true;
+      error.hidden = true;
+      try {
+        if (!await passwordMatches(input.value) || !await pinMatches(pinInput.value)) throw new Error("Incorrect password or PIN. Try again to confirm this transaction.");
+        const action = pendingAction;
+        if (!action) return;
+        if (action.type === "limit") {
+          state.hourlyLimit.pending = { amountCents: action.amount, effectiveAt: Date.now() + 60 * 60 * 1000 };
+          pendingAction = null;
+          document.querySelector("#password-dialog").close();
+          saveState();
+          render();
+          showToast(`Limit change to ${money(action.amount)} is scheduled in one hour.`);
+          return;
+        }
+        let purchaseLines = [];
+        let purchaseTotal = 0;
+        if (action.type === "purchase") {
+          purchaseLines = getCartLines();
+          purchaseTotal = purchaseLines.reduce((sum, line) => sum + line.item.price * line.quantity, 0);
+          if (!purchaseTotal || purchaseTotal > state.balance) throw new Error("The order changed or the balance is now too low. Review your tray and try again.");
+        }
+        const limitError = checkHourlyLimit(action.type === "topup" ? action.amount : purchaseTotal);
+        if (limitError) throw new Error(limitError);
+        if (action.type === "topup") {
+          state.balance += action.amount;
+          addTransaction("topup", "Demo wallet top-up", action.amount);
+        } else {
+          const summary = purchaseLines.map((line) => `${line.quantity} × ${line.item.name}`).join(", ");
+          state.balance -= purchaseTotal;
+          state.cart = {};
+          addTransaction("purchase", summary, purchaseTotal);
+        }
+        pendingAction = null;
+        document.querySelector("#password-dialog").close();
+        saveState();
+        render();
+        showToast(action.type === "topup" ? `${money(action.amount)} added to your demo balance.` : "Order placed. Your demo balance has been updated.");
+      } catch (exception) {
+        error.textContent = exception.message || "Could not confirm this transaction.";
+        error.hidden = false;
+        if (error.textContent.startsWith("Incorrect password")) input.select();
+      } finally {
+        submit.disabled = false;
+      }
+    });
+    document.querySelectorAll("dialog").forEach((dialog) => dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) dialog.close();
+    }));
+
+    const today = new Date();
+    document.querySelector("#today-date").textContent = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long" }).format(today);
+    document.querySelector(".page-heading .eyebrow").textContent = `${new Intl.DateTimeFormat("en-GB", { weekday: "long" }).format(today)} · Lunch is on`;
+    configureLogin();
+    render();
+    setInterval(renderLimitPolicy, 15000);
+  </script>
+</body>
+</html>
